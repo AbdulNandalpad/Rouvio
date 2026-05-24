@@ -1,0 +1,36 @@
+{
+  "name": "@rouvio/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "start": "next start -p 3002",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "@rouvio/overpass-client": "*",
+    "@rouvio/route-utils": "*",
+    "@rouvio/shared-types": "*",
+    "@supabase/supabase-js": "^2.49.4",
+    "@upstash/redis": "^1.34.9",
+    "framer-motion": "^12.12.1",
+    "lucide-react": "^0.511.0",
+    "maplibre-gl": "^5.5.0",
+    "next": "14.2.35",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap');
+
+@keyframes gradient-drift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bg-animate-gradient {
+  background: linear-gradient(135deg, #0F1F3D, #1B3A6B, #0D2A52, #152E5A);
+  background-size: 300% 300%;
+  animation: gradient-drift 14s ease infinite;
+}
+
+:root {
+  --color-primary: #1B3A6B;
+  --color-accent: #00C9A7;
+  --color-accent-dark: #00A88C;
+  --color-highlight: #FF8C42;
+  --color-surface: #F0F6FF;
+  --color-dark-bg: #0F1F3D;
+
+  --radius-card: 16px;
+  --radius-modal: 24px;
+  --radius-pill: 999px;
+  --radius-input: 8px;
+
+  /* POI category accent colors */
+  --cat-culture: #8B5CF6;
+  --cat-nature: #00C9A7;
+  --cat-food: #FF8C42;
+  --cat-scenic: #38BDF8;
+  --cat-practical: #6B7280;
+  --cat-family: #EC4899;
+  --cat-accommodation: #0EA5E9;
+  --cat-shopping: #FBBF24;
+}
+
+.dark {
+  --color-surface: #0F1F3D;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-navy);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* MapLibre GL resets */
+.maplibregl-canvas {
+  outline: none;
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}

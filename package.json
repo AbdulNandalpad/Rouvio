@@ -1,0 +1,17 @@
+{
+  "name": "rouvio",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.0"
+  }
+}
