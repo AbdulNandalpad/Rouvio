@@ -36,6 +36,8 @@ export interface RouteResult {
   durationHr: number
   fromCoords: Coords
   toCoords: Coords
+  fromName?: string
+  toName?: string
 }
 
 export interface TripStop {

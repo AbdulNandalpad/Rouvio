@@ -1,42 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Redis } from '@upstash/redis'
-import Anthropic from '@anthropic-ai/sdk'
-import type { AgentMessage, RouteContext } from '@rouvio/shared-types'
+import type { AgentMessage } from '@rouvio/shared-types'
 
-const redis = Redis.fromEnv()
-const anthropic = new Anthropic()
+interface RouteContext {
+  fromName?: string
+  toName?: string
+  distanceKm?: number
+  durationHr?: number
+  poiCount?: number
+  tripStopNames?: string[]
+  activeCategories?: string[]
+  addedStops?: string[]
+  timeOfDay?: string
+  dayOfWeek?: string
+}
 
 const RATE_LIMIT = 10
 const RATE_WINDOW = 60
 
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (!url || !token || url.startsWith('your_') || token.startsWith('your_')) return null
+  try {
+    const { Redis } = require('@upstash/redis')
+    return Redis.fromEnv() as {
+      incr: (key: string) => Promise<number>
+      expire: (key: string, sec: number) => Promise<unknown>
+    }
+  } catch {
+    return null
+  }
+}
+
+function getAnthropic() {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (!key || key.startsWith('your_') || key === '') return null
+  try {
+    const Anthropic = require('@anthropic-ai/sdk').default
+    return new Anthropic({ apiKey: key })
+  } catch {
+    return null
+  }
+}
+
 function buildSystemPrompt(ctx: RouteContext): string {
+  const from = ctx.fromName ?? 'Start'
+  const to = ctx.toName ?? 'Ziel'
+  const dist = ctx.distanceKm ?? 0
+  const dur = ctx.durationHr ?? 0
+  const stops = ctx.tripStopNames?.join(', ') || 'keine'
+  const cats = ctx.activeCategories?.join(', ') || 'alle'
+
   return `Du bist RODI (Rouvio Discovery Intelligence) — der eingebaute Reiseassistent von Rouvio.
 Du bist ein freundlicher, kenntnisreicher lokaler Experte für Deutschland, Österreich und die Schweiz.
 Du kennst Bundesstrassen, Landstrassen, Geheimtipps, saisonale Highlights und lokale Spezialitäten.
 
-KONTEXT (wird bei jedem Request dynamisch übergeben):
-- Route: ${ctx.from} nach ${ctx.to} (${ctx.distanceKm} km, ca. ${ctx.durationHr.toFixed(1)} Stunden)
-- Gefundene POIs: ${ctx.poiCount} gesamt
-- Aktive Filter: ${ctx.activeCategories.join(', ') || 'alle'}
-- Bereits hinzugefügte Stopps: ${ctx.addedStops.join(', ') || 'keine'}
-- Tageszeit: ${ctx.timeOfDay} | Wochentag: ${ctx.dayOfWeek}
+KONTEXT:
+- Route: ${from} nach ${to} (${dist} km, ca. ${dur.toFixed(1)} Stunden)
+- Gefundene POIs: ${ctx.poiCount ?? 0} gesamt
+- Aktive Filter: ${cats}
+- Bereits hinzugefügte Stopps: ${stops}
 
 VERHALTENSREGELN:
 1. Antworte IMMER in der Sprache des Nutzers (Deutsch oder Englisch — auto-detect)
-2. Mache konkrete Empfehlungen — keine vagen Aussagen wie "es gibt viele Möglichkeiten"
-3. Empfehle nie mehr als 4 Stopps auf einmal — lieber weniger, dafür besser erklärt
-4. Berücksichtige immer: Öffnungszeiten, Saisonalität, Fahrtzeit-Auswirkungen
-5. Bei Familien mit Kindern: priorisiere kostenlose, interaktive, kindgerechte Stopps
-6. Schlage nie Stopps vor die mehr als 30 Min. Umweg bedeuten (es sei denn Nutzer fragt explizit)
-7. Sei enthusiastisch aber präzise — wie ein begeisterter lokaler Freund
-8. Wenn unklar was der Nutzer will: EINE gezielte Rückfrage stellen
+2. Mache konkrete Empfehlungen — keine vagen Aussagen
+3. Empfehle nie mehr als 4 Stopps auf einmal
+4. Berücksichtige Öffnungszeiten, Saisonalität, Fahrtzeit-Auswirkungen
+5. Schlage nie Stopps vor die mehr als 30 Min. Umweg bedeuten
+6. Sei enthusiastisch aber präzise — wie ein begeisterter lokaler Freund
+7. Wenn unklar was der Nutzer will: EINE gezielte Rückfrage stellen
 
 ANTWORTFORMAT — IMMER als valides JSON:
 {
   "message": "Deine Antwort an den Nutzer als natürlicher Text",
-  "suggestedPOIIds": ["osm_id_1", "osm_id_2"],
+  "suggestedPOIIds": [],
   "addToRouteConfirm": false,
-  "followUpQuestion": "Optional: eine einzige gezielte Rückfrage oder null"
+  "followUpQuestion": null
 }`
 }
 
@@ -49,21 +88,57 @@ export async function POST(req: NextRequest) {
     userId?: string
   }
 
-  if (!message?.trim() || !routeContext) {
-    return NextResponse.json({ error: 'message and routeContext required' }, { status: 400 })
+  if (!message?.trim()) {
+    return NextResponse.json({ error: 'message required' }, { status: 400 })
   }
 
-  // Rate limiting
-  const rateLimitKey = `ratelimit:agent:${userId ?? req.ip ?? 'anon'}`
-  const current = await redis.incr(rateLimitKey)
-  if (current === 1) await redis.expire(rateLimitKey, RATE_WINDOW)
-  if (current > RATE_LIMIT) {
-    return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+  // Rate limiting — skip gracefully if Redis unavailable
+  const redis = getRedis()
+  if (redis) {
+    try {
+      const ip = req.headers.get('x-forwarded-for') ?? 'anon'
+      const rateLimitKey = `ratelimit:agent:${userId ?? ip}`
+      const current = await redis.incr(rateLimitKey)
+      if (current === 1) await redis.expire(rateLimitKey, RATE_WINDOW)
+      if (current > RATE_LIMIT) {
+        return NextResponse.json({ error: 'Too many requests. Please wait a moment.' }, { status: 429 })
+      }
+    } catch {
+      // Rate limit check failed — allow request to proceed
+    }
   }
 
-  const systemPrompt = buildSystemPrompt(routeContext)
+  const anthropic = getAnthropic()
+
+  // If no Anthropic key, return a mock helpful response for local dev
+  if (!anthropic) {
+    const mockResponse = {
+      message: routeContext
+        ? `Ich würde gerne Empfehlungen für deine Route von ${routeContext.fromName ?? 'Start'} nach ${routeContext.toName ?? 'Ziel'} machen! Bitte hinterlege deinen Anthropic API-Key in .env.local um RODI zu aktivieren.`
+        : 'RODI ist bereit! Bitte hinterlege deinen Anthropic API-Key in .env.local.',
+      suggestedPOIIds: [],
+      addToRouteConfirm: false,
+      followUpQuestion: null,
+    }
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, result: mockResponse })}\n\n`))
+        controller.close()
+      },
+    })
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    })
+  }
+
+  const systemPrompt = buildSystemPrompt(routeContext ?? {})
   const messages = [
-    ...conversationHistory.slice(-10).map((m) => ({
+    ...(conversationHistory ?? []).slice(-10).map((m) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
@@ -93,10 +168,12 @@ export async function POST(req: NextRequest) {
 
         // Parse and validate final JSON
         const jsonMatch = fullText.match(/\{[\s\S]*\}/)
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { message: fullText, suggestedPOIIds: [], addToRouteConfirm: false, followUpQuestion: null }
+        const parsed = jsonMatch
+          ? JSON.parse(jsonMatch[0])
+          : { message: fullText, suggestedPOIIds: [], addToRouteConfirm: false, followUpQuestion: null }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, result: parsed })}\n\n`))
-      } catch (err) {
+      } catch {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Agent error' })}\n\n`))
       } finally {
         controller.close()
