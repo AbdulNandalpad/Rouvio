@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, ArrowLeftRight, Globe } from 'lucide-react'
+import { RouvioLockup } from '@/components/Brand/RouvioMark'
 
 interface NominatimResult {
   place_id: number
@@ -89,7 +90,7 @@ export default function LandingPage() {
 
       {/* Topbar */}
       <header className="relative z-10 flex items-center justify-between px-6 py-5">
-        <RouvioLogo />
+        <RouvioLockup size={38} />
         <button
           onClick={() => setLang(lang === 'de' ? 'en' : 'de')}
           className="flex items-center gap-1.5 text-sm transition-colors px-3 py-1.5 rounded-pill"
@@ -222,45 +223,6 @@ export default function LandingPage() {
         Rouvio · Powered by OpenStreetMap · GDPR-konform · Keine Google-APIs
       </footer>
     </main>
-  )
-}
-
-/* ── Logo — Alpine: cobalt square + mountain-ridge R + wordmark ── */
-function RouvioLogo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="alpineGrad" x1="0" y1="0" x2="30" y2="30" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#1B3A6B" />
-            <stop offset="100%" stopColor="#2A5298" />
-          </linearGradient>
-        </defs>
-        <rect width="30" height="30" rx="8" fill="url(#alpineGrad)" />
-        {/* Mountain ridge clipped into top-right */}
-        <path d="M16 4L22 12H28V4H16Z" fill="rgba(0,201,167,0.25)" />
-        <path d="M17 4L22 10L27 4" stroke="#00C9A7" strokeWidth="1.2" strokeLinejoin="round" fill="none" />
-        {/* R letterform */}
-        <path d="M9 8h6c1.8 0 3.2 1.4 3.2 3.2S16.8 14.4 15 14.4H9" stroke="white" strokeWidth="2" strokeLinecap="round" fill="none" />
-        <line x1="9" y1="8" x2="9" y2="22" stroke="white" strokeWidth="2" strokeLinecap="round" />
-        <path d="M15 14.4L20 22" stroke="white" strokeWidth="2" strokeLinecap="round" />
-        {/* Route dot */}
-        <circle cx="20" cy="22" r="2" fill="#FF8C42" />
-      </svg>
-
-      <svg width="72" height="22" viewBox="0 0 72 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <text
-          x="0" y="17"
-          fontFamily="Outfit, sans-serif"
-          fontWeight="700"
-          fontSize="18"
-          fill="white"
-          letterSpacing="-0.3"
-        >
-          rouvio
-        </text>
-      </svg>
-    </div>
   )
 }
 

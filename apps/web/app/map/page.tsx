@@ -8,6 +8,7 @@ import type { POI, POICategory, RouteResult } from '@rouvio/shared-types'
 import FilterBar from '@/components/FilterBar/FilterBar'
 import POICard from '@/components/POICard/POICard'
 import ChatBar from '@/components/AgentChat/ChatBar'
+import { RouvioMark } from '@/components/Brand/RouvioMark'
 
 const MapCanvas = dynamic(() => import('@/components/Map/MapCanvas'), { ssr: false })
 
@@ -173,16 +174,27 @@ function MapPageInner() {
 
       {/* ── Floating topbar ── */}
       <div className="absolute top-4 left-4 right-4 z-30 flex items-center gap-3 pointer-events-none">
-        {/* Back button */}
-        <button
-          onClick={() => router.push('/')}
-          className="pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center transition-all"
-          style={{ background: 'rgba(15,31,61,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#00C9A7'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)'}
-        >
-          <ArrowLeft size={16} />
-        </button>
+        {/* Back button + mark */}
+        <div className="pointer-events-auto flex items-center gap-2">
+          <button
+            onClick={() => router.push('/')}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+            style={{ background: 'rgba(15,31,61,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#00C9A7'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.1)'}
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full"
+            style={{ background: 'rgba(15,31,61,0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <RouvioMark size={22} />
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 14, color: 'white', letterSpacing: '-0.2px' }}>
+              rouvio
+            </span>
+          </div>
+        </div>
 
         {/* Route breadcrumb */}
         <div
