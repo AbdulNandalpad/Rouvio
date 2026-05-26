@@ -62,6 +62,12 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
 }
 
+/* Transparent input placeholder */
+input::placeholder {
+  color: rgba(255,255,255,0.22);
+  font-family: 'DM Sans', sans-serif;
+}
+
 /* MapLibre GL resets */
 .maplibregl-canvas {
   outline: none;
